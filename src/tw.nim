@@ -1,36 +1,37 @@
-import parsetoml, twitter, json, httpclient, os
+import parsetoml, twitter, json, httpclient, os, cligen
 
 proc errorHandling(s: string): void =
   echo s
   system.programResult = 1
 
-when isMainModule:
-  if os.paramCount() <= 1:
-    errorHandling("2 args are required.")
+proc tweet(username: string, text: string): void =
+  let filepath = $joinPath(
+    getHomeDir(),
+    ".config",
+    "tw",
+    username & ".toml"
+  )
+
+  if not os.fileExists(filepath):
+    errorHandling("File is not exists.")
   else:
-    let filepath = $joinPath(
-      getHomeDir(),
-      ".config",
-      "tw",
-      $os.commandLineParams()[0] & ".toml"
-    )
+    let config = parsetoml.parseFile(filepath)
+    let consumerToken = newConsumerToken(
+                          config["Twitter"]["ConsumerKey"].getStr(),
+                          config["Twitter"]["ConsumerSecret"].getStr()
+                        )
+    let twitterAPI = newTwitterAPI(
+                      consumerToken,
+                      config["Twitter"]["AccessToken"].getStr(),
+                      config["Twitter"]["AccessTokenSecret"].getStr()
+                    )
 
-    if not os.fileExists(filepath):
-      errorHandling("File is not exists.")
+    var resp = twitterAPI.statusesUpdate(text)
+    if resp.status == $Http200:
+      echo parseJson(resp.body)["text"]
+      echo(parseJson(resp.body)["text"])
     else:
-      let config = parsetoml.parseFile(filepath)
-      let consumerToken = newConsumerToken(
-                            config["Twitter"]["ConsumerKey"].getStr(),
-                            config["Twitter"]["ConsumerSecret"].getStr()
-                          )
-      let twitterAPI = newTwitterAPI(
-                        consumerToken,
-                        config["Twitter"]["AccessToken"].getStr(),
-                        config["Twitter"]["AccessTokenSecret"].getStr()
-                      )
+      echo parseJson(resp.body).pretty
 
-      var resp = twitterAPI.statusesUpdate($os.commandLineParams()[1])
-      if resp.status == $Http200:
-        echo parseJson(resp.body)["text"]
-      else:
-        echo parseJson(resp.body).pretty
+when isMainModule:
+  dispatch(tweet)

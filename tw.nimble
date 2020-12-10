@@ -13,3 +13,4 @@ bin           = @["tw"]
 requires "nim >= 1.4.2"
 requires "parsetoml"
 requires "twitter"
+requires "cligen"
