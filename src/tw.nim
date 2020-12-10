@@ -28,8 +28,14 @@ proc tweet(username: string, text: string): void =
 
     var resp = twitterAPI.statusesUpdate(text)
     if resp.status == $Http200:
-      echo parseJson(resp.body)["text"]
-      echo(parseJson(resp.body)["text"])
+      let tweet = parseJson(resp.body)
+      let tweetUrl = [
+        "https://twitter.com",
+        tweet["user"]["screen_name"].getStr(),
+        "status",
+        $tweet["id"]
+      ].join("/")
+      echo tweetUrl
     else:
       echo parseJson(resp.body).pretty
 
